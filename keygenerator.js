@@ -1,3 +1,4 @@
+const fs = require("fs");
 /*
 import the elliptic curve library to generate our private/public key pairs
 */
@@ -12,7 +13,14 @@ const key = ec.genKeyPair();
 const publicKey = key.getPublic("hex");
 const privateKey = key.getPrivate("hex");
 
-console.log();
-console.log("(KEEP THIS SAFE LIKE YOUR PASSWORD) Private key generated: " + privateKey);
+const data = publicKey + "\n" + privateKey;
+
+fs.writeFile("keys.txt", data, (err) => {
+    if (err) throw err;
+});
+
+console.log("Public and Private keys written to file \"keys.txt\"");
 console.log("(also known as your wallet address) Public key generated: " + publicKey);
+console.log("(KEEP THIS SAFE LIKE YOUR PASSWORD) Private key generated: " + privateKey);
+
 
