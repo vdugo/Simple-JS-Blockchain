@@ -30,7 +30,4 @@ console.log("Your current balance is: " + blockchain.getBalanceOfAddress(myWalle
 
 console.log("Is chain valid? " + blockchain.isChainValid());
 
-/**
- * does something
- * @
- */
+
