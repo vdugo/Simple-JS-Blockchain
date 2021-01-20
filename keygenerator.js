@@ -1,7 +1,7 @@
+// import file system to write the generated keys to a text file
 const fs = require("fs");
-/*
-import the elliptic curve library to generate our private/public key pairs
-*/
+
+// import the elliptic curve library to generate our private/public key pairs
 const EC = require("elliptic").ec;
 
 // create a new elliptic curve object using secp256k1, the same algorithm that bitcoin uses
@@ -13,9 +13,11 @@ const key = ec.genKeyPair();
 const publicKey = key.getPublic("hex");
 const privateKey = key.getPrivate("hex");
 
-const data = publicKey + "\n" + privateKey;
+// make a string with publicKey on the first line then privateKey on the next
+const keys = publicKey + "\n" + privateKey;
 
-fs.writeFile("keys.txt", data, (err) => {
+// write the generated keys to a text file
+fs.writeFile("keys.txt", keys, (err) => {
     if (err) throw err;
 });
 
