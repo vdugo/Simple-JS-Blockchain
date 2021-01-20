@@ -20,10 +20,11 @@ class Transaction
         this.fromAddress = fromAddress;
         this.toAddress = toAddress;
         this.amount = amount;
+        this.timestamp = Date.now();
     }
 
     /**
-    * Calculates the SHA256 hash of a transaction
+    * Creates the SHA256 hash of a transaction
     * @returns {string}
     */
     calculateHash()
@@ -51,14 +52,15 @@ class Transaction
         this.signature = sig.toDER("hex");
     }
 
-    /*
-    function to verify if our transaction has been correctly
-    signed. The one special transaction that we must take into
-    account is our mining rewards. Because there is no fromAddress
-    for mining rewards, this special case is a valid transaction and
-    must be accounted for. A mining reward is a transaction that 
-    goes from the null address to the mining reward address.
-    */
+    /** Function to verify if our transaction has been correctly
+     * signed. The one special transaction that we must take into
+     * account is the mining reward transaction. Despite there being
+     * no fromAddress for mining rewards, this special case is still
+     * considered a valid transaction and must be accounted for.
+     * A mining reward is a transaction that goes from the null address
+     * to the mining reward address.
+     * @returns {boolean}
+     */
     isValid()
     {
         // the transaction is valid if it is a mining reward
@@ -97,17 +99,19 @@ class Transaction
 
 class Block
 {
-    /*
-    timestamp will tell us when the block was created
-    transactions is the transaction data in a block
-    previousHash is a string that contains the previous block's hash
-    hash will contain the hash of the block
-    nonce is a value that is used to get a different hash after each
-    proof of work calculation, this is needed because if nothing in a block
-    is changed, then it will produce the same hash as before.
-    */
+    /**
+     * @param {number} timestamp
+     * @param {Transaction[]} transactions
+     * @param {string} previousHash
+     */
+    
     constructor(timestamp, transactions, previousHash = '')
     {
+        /*
+        nonce is a value that is used to get a different hash after each
+        proof of work calculation, this is needed because if nothing in a block
+        is changed, then it will produce the same hash as before.
+        */
         this.timestamp = timestamp;
         this.transactions = transactions;
         this.previousHash = previousHash;
@@ -115,39 +119,39 @@ class Block
         this.nonce = 0;
     }
 
-    /*
-    This function will take the properties of the block and run it through
-    the SHA256 (secure hashing algorithm 256 bit) algorithm. After, it will
-    return the hash of this block. This hash will be used to identify the
-    block on the blockchain
+    /**
+     * Calculates the SHA256 hash of a block using all of its data
+     * This hash will be used to identify the block on the blockchain.
+     * @returns {string} 
     */
     calculateHash()
     {
         return SHA256(this.index + this.timestamp + this.previousHash + JSON.stringify(this.data) + this.nonce).toString();
     }
 
-    /*
-    Because we do not want people to create massive amounts of blocks per second,
-    we need to implement proof of work (mining). Implementing proof of work also prevents
-    someone from recalculating all of the hashes, creating a valid blockchain
-    which was tampered with. We will make the hash of our newly mined block begin with
-    an amount of zeroes equal to the mining difficulty.
-    */
+    /**
+     * Begins mining a block. Changes the nonce until
+     * the hash of the block is calculated with the amount
+     * of zeroes equal to the mining difficulty. Because we
+     * do not want people to create massive amounts of blocks per
+     * second, we need to implement this proof of work (mining)
+     * concept. Proof of work also prevents someone from recalculating
+     * all of the hashes, which would create a valid blockchain despite
+     * it being tampered with.
+     * @param {number} difficulty 
+     */
     mineBlock(difficulty)
     {
         /*
-        We will attempt to make the first difficulty characters of the hash begin
-        with 0's. This is done by recalculating the hash until the desired hash
-        is achieved. Because calculating the hash of the same data will yield the same
-        hash, we use a nonce value to change it with each iteration of the while loop,
+        Because calculating the hash of the same data will yield the same
+        hash, we need a nonce value to change it with each iteration of the while loop,
         as changing the input of the hash function even slightly will greatly change
         the hash output. Take a substring of our hash from character 0 to difficulty,
         keep repeating the while loop while this part of the hash is not equal to the
         correct amount of zeroes. Loop stops once the desired number of zeroes is 
-        achieved, thus successfully mining the block.
+        achieved, thus successfully mining the block. The second part of the while condition
+        creates a new array that is the same length as the difficulty.
         */
-        // the second part of the while condition creates a new array that is the same
-        // length as the difficulty
         while(this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0"))
         {
             this.nonce++;
@@ -156,10 +160,11 @@ class Block
         console.log("Block mined: " + this.hash);
     }
 
-    /*
-    Checks if all of the transactions in the block are valid
-    if there is even one that is invalid, then the entire block
-    is invalid. Loops through every transaction in a block.
+   /**
+    * Validates all the transactions in the block. Returns
+    * false if the block is invalid. Loops through every 
+    * transaction in a block.
+    * @returns {boolean}
     */
    hasValidTransactions()
    {
@@ -177,12 +182,15 @@ class Block
 
 class Blockchain
 {
-    /* 
-    chain is an array of blocks
-    pendingTransactions is an array of blocks in queue to be processed
-    the constructor creates the chain and pushes the genesis block onto it
-    the mining difficulty is also arbitrarily set.
-    mining reward is arbitrary, but halves every 4 years on the Bitcoin blockchain
+   /**
+    * The constructor creates the chain and automatically pushes the
+    * genesis block onto it. Mining difficulty is arbitrarily set. On
+    * the Bitcoin blockchain, the mining reward halves every 210,000 blocks
+    * or approximately 4 years.
+    * @param {Block[]} chain
+    * @param {number} difficulty
+    * @param {Array} pendingTransactions
+    * @param {number} miningReward
     */
     constructor()
     {
@@ -192,53 +200,42 @@ class Blockchain
         this.miningReward = 100;
     }
 
-    /* 
-    the first block on a blockchain is called the genesis block, this is
-    the only block which does not have a previousHash or previous block that
-    it points to, so we need to add the genesis block manually via the 
-    constructor whenever a Blockchain object is instantiated
+   /**
+    * The first block on a blockchain is called the genesis block, this is
+    * the only block which does not have a previousHash or previous block that
+    * it can point to. We need to add the genesis block manually via the
+    * constructor whenever a Blockchain object is instantiated.
+    * @returns {Block}
     */
     createGenesisBlock()
     {
         return new Block("01/01/2020", "Genesis block", "0");
     }
 
-    /* 
-    returns the latest block in the blockchain, the last index
+   /**
+    * Returns the latest block in the blockchain, which
+    * is the last index. Good for when you need to create
+    * a new Block and need the hash of the previous Block.
+    * @returns {Block[]}
     */
     getLatestBlock()
     {
         return this.chain[this.chain.length - 1];
     }
 
-    /* deprecated function
-    adds a new block onto the chain. First sets the previousHash
-    of the new block to the hash of the latest block in the blockchain,
-    that is, the block at the last index in the array, then it will 
-    mine a new block by recalculating its hash because every time a 
-    property in a block is changed, the hash must be recalculated. 
-    Lastly, push the new block onto the blockchain.
-    */
-    //addBlock(newBlock)
-    //{
-    //    newBlock.previousHash = this.getLatestBlock().hash;
-    //   newBlock.mineBlock(this.difficulty);
-    //    this.chain.push(newBlock);
-    //}
-
-    /*
-    Processes all the pending transactions, in a real blockchain
-    the miners would choose which block to process next, as there
-    would be far too many. This is simplified for demonstration
-    purposes. We need pending transactions for security purposes.
-    For example, the Bitcoin protocol has a fixed interval of 10
-    minutes per block to be mined. Even if the amount of miners
-    increases, the difficulty is automatically adjusted to achieve
-    a 10 minute block time.
-    miningRewardAddress is the address to send the mining reward to
-    */
-   minePendingTransactions(miningRewardAddress)
-   {
+    /**
+     * Puts all the currently pending transactions into a Block
+     * then starts the mining process. Also adds a transaction
+     * for the mining reward, which is sent to the givern address.
+     * In a real blockchain, miners would choose which block to
+     * process next. Transactions must be pending for security purposes.
+     * For example, the Bitcoin protocol has about a 10 minute block
+     * mining time. Even if the amount of miners increases, the difficulty
+     * would be automatically adjusted to achieve a 10 minute block time.
+     * @param {string} miningRewardAddress 
+     */
+    minePendingTransactions(miningRewardAddress)
+    {
        const rewardTx = new Transaction(null, miningRewardAddress, this.miningReward);
        this.pendingTransactions.push(rewardTx);
 
@@ -249,13 +246,15 @@ class Blockchain
        this.chain.push(block);
        // reset the pending transactions and pay the miner simultaneously
        this.pendingTransactions = [ new Transaction(null, miningRewardAddress, this.miningReward) ]
-   }
+    }
 
-   /*
-   Pushes a transaction onto the array of pending transactions
-   */
-   addTransaction(transaction)
-   {
+   /**
+    * Pushes a transaction onto the array of pending transactions.
+    * Verifies that the given transaction is properly signed.
+    * @param {Transaction} transaction 
+    */
+    addTransaction(transaction)
+    {
        // check if the fromAddress and toAddress are filled in
        if(!transaction.fromAddress || !transaction.toAddress)
        {
@@ -269,50 +268,54 @@ class Blockchain
        }
 
        this.pendingTransactions.push(transaction);
-   }
+    }
 
-   /*
-   Gets the balance of the address given, this is obtained by looping 
-   through every block's transactions of every block on the blockchain.
-   Logically, whenever you are the from fromAddress, that means that
-   you were the sender in the found transaction, so the money is subracted
-   from your balance. Similarly, whenever you are the toAddress, that means
-   that you were the receiver in the found transaction, so the money is
-   added to your balance.
-   */
-   getBalanceOfAddress(address)
-   {
-       let balance = 0;
+   /**
+    * Gets the balance of the address given. This is obtained
+    * by looping through every block's transactions of every block
+    * that is on the blockchain. Logically, whenever you are the
+    * fromAddress, this means that you were the sender in the found
+    * transaction, so the money is subtracted from your balance. Similarly,
+    * whenever you are the toAddress, that means that you were the receiver
+    * in the found transaction, so the money is added to your balance.
+    * @param {string} address 
+    */
+    getBalanceOfAddress(address)
+    {
+        let balance = 0;
 
-       for (const block of this.chain)
-       {
-           for (const trans of block.transactions)
-           {
-               if (trans.fromAddress === address)
-               {
-                   balance -= trans.amount;
-               }
+        for (const block of this.chain)
+        {
+            for (const trans of block.transactions)
+            {
+                if (trans.fromAddress === address)
+                {
+                    balance -= trans.amount;
+                }
 
-               if(trans.toAddress === address)
-               {
-                   balance += trans.amount;
-               }
-           }
-       }
+                if(trans.toAddress === address)
+                {
+                    balance += trans.amount;
+                }
+            }
+        }
 
-       return balance;
-   }
+        return balance;
+    }
 
-    /*
-    this function will check if the blockchain is valid. Whenever a new
-    block is added, it cannot be changed without causing invalidation down
-    the blockchain, because each block's hash is calculated using the its
-    properties and the previous block's hash.
+   /**
+    * Checks if the blockchain is valid by looping over all the blocks
+    * in the chain and verifying if they are properly linked together
+    * and that no hashes have been tampered with. Consequently, all of
+    * the transactions inside of the blocks are also verified.
+    * @returns {boolean}
     */
     isChainValid()
     {
-        // Check if the Genesis block hasn't been tampered with by comparing
-        // the output of createGenesisBlock with the first block on our chain
+        /* 
+        Check if the Genesis block hasn't been tampered with by comparing
+        the output of createGenesisBlock with the first block on our chain
+        */
         const realGenesis = JSON.stringify(this.createGenesisBlock());
 
         if (realGenesis !== JSON.stringify(this.chain[0])) 
@@ -320,14 +323,19 @@ class Blockchain
         return false;
         }
         
-        // start looping at block 1, because block 0 is the genesis block
+        /*
+        Now check the rest of the blocks. Start looping at block 1, because
+        block 0 is the genesis block.
+        */
         for (let i = 1; i < this.chain.length; ++i)
         {
             const currentBlock = this.chain[i];
             const previousBlock = this.chain[i-1];
 
-            // check if the current block has all valid transactions
-            // if it doesn't then the blockchain is invalid
+            /* 
+            Check if the current block has all valid transactions.
+            If it doesn't then the entire blockchain is invalid.
+            */
             if(!currentBlock.hasValidTransactions())
             {
                 return false;
@@ -350,14 +358,15 @@ class Blockchain
                 return false;
             }
         }
-
-        // if the loop finishes successfully without returning false, then
-        // our blockchain is valid and not hacked
-
+        /* 
+        If the loop finishes successfully without returning false,
+        then our blockchain is valid and not hacked.
+        */
         return true;
         
     }
 }
 
 module.exports.Blockchain = Blockchain;
+module.exports.Block = Block;
 module.exports.Transaction = Transaction;
