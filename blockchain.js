@@ -236,14 +236,18 @@ class Blockchain
      */
     minePendingTransactions(miningRewardAddress)
     {
+       // create the reward transaction and push it onto the pending transactions 
        const rewardTx = new Transaction(null, miningRewardAddress, this.miningReward);
        this.pendingTransactions.push(rewardTx);
-
+       
+       // make a new block with the transactions currently in pending transactions then start mining
        let block = new Block(Date.now(), this.pendingTransactions);
        block.mineBlock(this.difficulty);
-
+       
+       // push the newly mined block onto the blockchain
        console.log("Block successfully mined");
        this.chain.push(block);
+       
        // reset the pending transactions and pay the miner simultaneously
        this.pendingTransactions = [ new Transaction(null, miningRewardAddress, this.miningReward) ]
     }
