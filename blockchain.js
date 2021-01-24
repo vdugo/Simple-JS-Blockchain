@@ -347,7 +347,7 @@ class Blockchain
                 return false;
             }
 
-            // check if the has of the current block is not equal to its hash calculation
+            // check if the has of the current block is not equal to its hash calculation.
             if (currentBlock.hash !== currentBlock.calculateHash())
             {
                 // the blockchain is invalid if it doesn't match
