@@ -334,7 +334,6 @@ class Blockchain
         for (let i = 1; i < this.chain.length; ++i)
         {
             const currentBlock = this.chain[i];
-            const previousBlock = this.chain[i-1];
 
             /* 
             Check if the current block has all valid transactions.
@@ -352,15 +351,6 @@ class Blockchain
                 return false;
             }
 
-            /* 
-            check if our block points to a correct previous block.
-            if the previous hash of the current block is not equal to
-            the previous block's hash
-            */
-            if (currentBlock.previousHash !== previousBlock.hash)
-            {
-                return false;
-            }
         }
         /* 
         If the loop finishes successfully without returning false,
